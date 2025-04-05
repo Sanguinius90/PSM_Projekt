@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">MyTimeManager</string>
+    <string name="action_settings">Settings</string>
+    <!-- Strings used for fragments for navigation -->
+    <string name="toolbar_title">Mój tytuł</string>
+    <string name="second_fragment_label">Second Fragment</string>
+    <string name="next">Next</string>
+    <string name="previous">Previous</string>
+</resources>
