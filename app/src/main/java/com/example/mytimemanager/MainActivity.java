@@ -1,27 +1,27 @@
 package com.example.mytimemanager;
 
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.snackbar.Snackbar;
 
-import androidx.appcompat.app.AppCompatActivity;
-
-import android.view.View;
-
-import androidx.navigation.NavController;
-import androidx.navigation.Navigation;
-import androidx.navigation.ui.AppBarConfiguration;
-import androidx.navigation.ui.NavigationUI;
-
 import com.example.mytimemanager.databinding.ActivityMainBinding;
 
-import android.view.Menu;
-import android.view.MenuItem;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
-    private AppBarConfiguration appBarConfiguration;
     private ActivityMainBinding binding;
+    private List<Task> taskList = new ArrayList<>();
+    private TaskAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,52 +33,43 @@ public class MainActivity extends AppCompatActivity {
         // Ustawienie toolbaru
         setSupportActionBar(binding.toolbar);
 
-        // Ustawienie tytułu bezpośrednio na pasku narzędzi
-        binding.toolbar.setTitle(R.string.toolbar_title); // Tutaj dodajemy tytuł
-
-        // Inicjalizacja nawigacji
-        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
-        appBarConfiguration = new AppBarConfiguration.Builder(navController.getGraph()).build();
-        NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
-
         // Ustawienie kliknięcia przycisku
         binding.addTask.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Dodaj Zadanie", Snackbar.LENGTH_LONG)
-                        .setAnchorView(R.id.addTask)
-                        .setAction("Action", null).show();
+                // Dodaj nowe zadanie
+                Task newTask = new Task("Nowe zadanie", "Opis zadania", "12.04.2025", false);
+                taskList.add(newTask);
+                adapter.notifyItemInserted(taskList.size() - 1);
+                Snackbar.make(view, "Dodano nowe zadanie", Snackbar.LENGTH_SHORT).show();
             }
         });
-    }
 
+        // RecyclerView i adapter
+        RecyclerView recyclerView = binding.taskRecyclerView;  // Użycie binding
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        adapter = new TaskAdapter(taskList);
+        recyclerView.setAdapter(adapter);
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
+        // Inflacja menu - dodanie elementów do paska akcji
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
+        // Obsługa kliknięć na elementy menu
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
+        // Jeśli kliknięto opcję ustawień
         if (id == R.id.action_settings) {
+            Toast.makeText(this, "Przejdź do ustawień", Toast.LENGTH_SHORT).show();
             return true;
         }
 
         return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    public boolean onSupportNavigateUp() {
-        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
-        return NavigationUI.navigateUp(navController, appBarConfiguration)
-                || super.onSupportNavigateUp();
     }
 }
