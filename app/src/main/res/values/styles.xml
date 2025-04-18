@@ -7,4 +7,10 @@
     <style name="ToolbarTitleTextAppearance">
         <item name="android:textColor">@android:color/white</item>
     </style>
+
+    <style name="MyDatePickerDialogTheme" parent="Theme.MaterialComponents.Dialog">
+        <item name="colorPrimary">@color/green</item>
+        <item name="colorPrimaryVariant">@color/darkGreen</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+    </style>
 </resources>
