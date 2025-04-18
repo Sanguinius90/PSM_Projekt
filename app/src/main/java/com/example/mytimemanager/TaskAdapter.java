@@ -52,4 +52,9 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             checkBox = view.findViewById(R.id.task_done);
         }
     }
+
+    public void updateTasks(List<Task> newTasks) {
+        this.taskList = newTasks;
+        notifyDataSetChanged();
+    }
 }

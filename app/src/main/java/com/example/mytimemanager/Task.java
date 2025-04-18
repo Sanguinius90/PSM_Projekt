@@ -1,6 +1,12 @@
 package com.example.mytimemanager;
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
 
+@Entity
 public class Task {
+    @PrimaryKey(autoGenerate = true)
+    private int id;
+
     private String title;
     private String description;
     private String date;
@@ -11,6 +17,14 @@ public class Task {
         this.description = description;
         this.date = date;
         this.done = done;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     public String getTitle() {
