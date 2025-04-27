@@ -1,13 +1,19 @@
 package com.example.mytimemanager;
 
+import android.Manifest;
+
 import android.app.DatePickerDialog;
+import android.content.pm.PackageManager;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -18,16 +24,24 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.room.Room;
+import androidx.work.ExistingPeriodicWorkPolicy;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
 
 import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.snackbar.Snackbar;
 
 import com.example.mytimemanager.databinding.ActivityMainBinding;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -40,6 +54,32 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        NotificationHelper.createNotificationChannel(this);
+
+        //Sprawdzanie czy wysłać powiadomienie co 24h
+
+//        PeriodicWorkRequest request = new PeriodicWorkRequest.Builder(
+//                ReminderWorker.class,
+//                24, TimeUnit.HOURS
+//        ).build();
+//
+//        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+//                "task_reminder",
+//                ExistingPeriodicWorkPolicy.KEEP,
+//                request
+//        );
+
+        // Powiadomienie przy uruchamianiu aplikacji
+        OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(ReminderWorker.class).build();
+        WorkManager.getInstance(this).enqueue(request);
+//
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // Android 13+
+            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1);
+            }
+        }
+
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
@@ -47,6 +87,7 @@ public class MainActivity extends AppCompatActivity {
         db = Room.databaseBuilder(getApplicationContext(),
                         AppDatabase.class, "task-database")
                 .allowMainThreadQueries()
+                .fallbackToDestructiveMigration()
                 .build();
 
         // Toolbar
@@ -96,9 +137,10 @@ public class MainActivity extends AppCompatActivity {
                         String title = ((EditText) dialogView.findViewById(R.id.input_title)).getText().toString();
                         String description = ((EditText) dialogView.findViewById(R.id.input_description)).getText().toString();
                         String date = ((EditText) dialogView.findViewById(R.id.input_date)).getText().toString();
+                        boolean highPriority = ((CheckBox) dialogView.findViewById(R.id.input_high_priority)).isChecked();
 
                         if (!title.isEmpty()) {
-                            Task newTask = new Task(title, description, date, false);
+                            Task newTask = new Task(title, description, date, false, highPriority);
                             db.taskDao().insert(newTask);
                             taskList = db.taskDao().getAll();
                             adapter.updateTasks(taskList);
@@ -143,11 +185,49 @@ public class MainActivity extends AppCompatActivity {
 
                 View itemView = viewHolder.itemView;
                 Paint paint = new Paint();
-                paint.setColor(ContextCompat.getColor(MainActivity.this, R.color.darkGreen));
+
+                int position = viewHolder.getAdapterPosition();
+                if (position >= 0 && position < taskList.size()) {
+                    Task task = taskList.get(position);
+
+                    int colorResId = R.color.darkGreen; // Domyślnie ciemnozielony
+
+                    if (task.isHighPriority()) {
+                        // Jeśli wysoki priorytet - zawsze ciemnoczerwony
+                        colorResId = R.color.darkRed;
+                    } else {
+                        // Jeśli nie wysoki priorytet - sprawdzamy ile dni do deadline
+                        SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+                        try {
+                            Date today = new Date();
+                            Date taskDate = sdf.parse(task.getDate());
+
+                            if (taskDate != null) {
+                                long diffInMillies = taskDate.getTime() - today.getTime();
+                                long diffInDays = TimeUnit.MILLISECONDS.toDays(diffInMillies);
+
+                                if (diffInDays <= 3) {
+                                    colorResId = R.color.darkRed;
+                                } else if (diffInDays <= 10) {
+                                    colorResId = R.color.darkOrange;
+                                }
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    paint.setColor(ContextCompat.getColor(MainActivity.this, colorResId));
+                }
 
                 if (dX < 0) {
-                    canvas.drawRect(itemView.getRight() + dX, itemView.getTop(),
-                            itemView.getRight(), itemView.getBottom(), paint);
+                    float radius = 50f;
+
+                    RectF rectF = new RectF(
+                            itemView.getRight() + dX, itemView.getTop(),
+                            itemView.getRight(), itemView.getBottom()
+                    );
+                    canvas.drawRoundRect(rectF, radius, radius, paint);
 
                     Drawable icon = ContextCompat.getDrawable(MainActivity.this, R.drawable.ic_delete);
                     if (icon != null) {
@@ -164,6 +244,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             }
+
         });
 
         itemTouchHelper.attachToRecyclerView(binding.taskRecyclerView);

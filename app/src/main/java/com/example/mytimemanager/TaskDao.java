@@ -17,4 +17,7 @@ public interface TaskDao {
 
     @Update
     void update(Task task);
+
+    @Query("SELECT * FROM Task WHERE id = :id LIMIT 1")
+    Task findById(int id);
 }

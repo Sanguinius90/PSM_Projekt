@@ -43,6 +43,7 @@ dependencies {
     implementation(libs.navigation.ui)
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.room:room-runtime:2.6.1")
+    implementation(libs.work.runtime)
     annotationProcessor("androidx.room:room-compiler:2.6.1")
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
