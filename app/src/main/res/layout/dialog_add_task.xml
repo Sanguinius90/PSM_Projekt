@@ -9,14 +9,18 @@
         android:id="@+id/input_title"
         android:hint="Tytuł"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:longClickable="false"
+        android:inputType="none"/>
 
     <EditText
         android:id="@+id/input_description"
         android:hint="Opis"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp" />
+        android:layout_marginTop="8dp"
+        android:longClickable="false"
+        android:inputType="none"/>
 
     <EditText
         android:id="@+id/input_date"
@@ -25,5 +29,14 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:focusable="false"
-        android:clickable="true" />
+        android:clickable="true"
+        android:longClickable="false"
+        android:inputType="none" />
+
+    <CheckBox
+        android:id="@+id/input_high_priority"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Wysoki priorytet"
+        android:layout_marginTop="8dp" />
 </LinearLayout>
