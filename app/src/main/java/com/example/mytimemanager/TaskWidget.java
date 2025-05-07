@@ -97,14 +97,14 @@ public class TaskWidget extends AppWidgetProvider {
         if (urgentTask != null) {
             views.setTextViewText(R.id.widget_task_title, urgentTask.getTitle());
 
-            // Przycisk "✔" - oznacz jako wykonane
+            // Przycisk oznacz jako wykonane
             Intent doneIntent = new Intent(context, TaskWidget.class);
             doneIntent.setAction(ACTION_MARK_DONE);
             doneIntent.putExtra("task_id", urgentTask.getId());
             PendingIntent donePendingIntent = PendingIntent.getBroadcast(context, 0, doneIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
             views.setOnClickPendingIntent(R.id.widget_done_button, donePendingIntent);
 
-            // Przycisk "🗑️" - usuń
+            // Przycisk usuń
             Intent deleteIntent = new Intent(context, TaskWidget.class);
             deleteIntent.setAction(ACTION_DELETE_TASK);
             deleteIntent.putExtra("task_id", urgentTask.getId());

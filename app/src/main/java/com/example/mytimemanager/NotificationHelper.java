@@ -29,7 +29,7 @@ public class NotificationHelper {
         Log.d("NotificationHelper", "Showing notification: " + title);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_notification) // musisz mieć ikonkę!
+                .setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle(title)
                 .setContentText(text)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)

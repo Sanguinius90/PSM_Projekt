@@ -88,7 +88,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             description = view.findViewById(R.id.task_description);
             date = view.findViewById(R.id.task_date);
             checkBox = view.findViewById(R.id.task_done);
-            cardView = (CardView) view; // Cały `CardView` bo rootem layoutu jest CardView
+            cardView = (CardView) view;
         }
     }
 
