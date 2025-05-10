@@ -103,6 +103,20 @@ public class MainActivity extends AppCompatActivity {
         adapter.setOnItemClickListener(task -> showEditDialog(task));
         recyclerView.setAdapter(adapter);
 
+        binding.taskRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                if (dy > 0 && binding.addTask.getVisibility() == View.VISIBLE) {
+                    // Scroll w dół — ukryj
+                    binding.addTask.hide();
+                } else if (dy < 0 && binding.addTask.getVisibility() != View.VISIBLE) {
+                    // Scroll w górę — pokaż
+                    binding.addTask.show();
+                }
+            }
+        });
+
         // Dodawanie zadania
         binding.addTask.setOnClickListener(view -> {
             View dialogView = getLayoutInflater().inflate(R.layout.dialog_add_task, null);
