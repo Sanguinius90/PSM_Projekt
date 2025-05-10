@@ -94,12 +94,12 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(binding.toolbar);
 
         // Pobranie zadań z bazy
-        taskList = db.taskDao().getAll();
+        taskList = db.taskDao().getActiveTasks();
 
         // Ustawienie RecyclerView i adaptera
         RecyclerView recyclerView = binding.taskRecyclerView;
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new TaskAdapter(taskList);
+        adapter = new TaskAdapter(taskList, this);
         adapter.setOnItemClickListener(task -> showEditDialog(task));
         recyclerView.setAdapter(adapter);
 
@@ -143,9 +143,8 @@ public class MainActivity extends AppCompatActivity {
                         if (!title.isEmpty()) {
                             Task newTask = new Task(title, description, date, false, highPriority);
                             db.taskDao().insert(newTask);
-                            taskList = db.taskDao().getAll();
+                            taskList = db.taskDao().getActiveTasks();
                             adapter.updateTasks(taskList);
-                            Snackbar.make(view, "Dodano zadanie", Snackbar.LENGTH_SHORT).show();
                         } else {
                             Toast.makeText(MainActivity.this, "Tytuł nie może być pusty!", Toast.LENGTH_SHORT).show();
                         }
@@ -167,13 +166,13 @@ public class MainActivity extends AppCompatActivity {
                 int position = viewHolder.getAdapterPosition();
                 Task removedTask = taskList.get(position);
                 db.taskDao().delete(removedTask);
-                taskList = db.taskDao().getAll();
+                taskList = db.taskDao().getActiveTasks();
                 adapter.updateTasks(taskList);
 
                 Snackbar.make(binding.getRoot(), "Usunięto zadanie", Snackbar.LENGTH_LONG)
                         .setAction("Cofnij", v -> {
                             db.taskDao().insert(removedTask);
-                            taskList = db.taskDao().getAll();
+                            taskList = db.taskDao().getActiveTasks();
                             adapter.updateTasks(taskList);
                         }).show();
             }
@@ -261,18 +260,26 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Obsługa kliknięć na elementy menu
         int id = item.getItemId();
 
-        // Jeśli kliknięto opcję ustawień
-        if (id == R.id.action_settings) {
-            Toast.makeText(this, "Przejdź do ustawień", Toast.LENGTH_SHORT).show();
+        if (id == R.id.action_done) {
+            taskList = db.taskDao().getDoneTasks();
+            adapter.updateTasks(taskList);
+            binding.addTask.setVisibility(View.GONE); // ukryj przycisk
+            return true;
+        }
+
+        if (id == R.id.action_active) {
+            taskList = db.taskDao().getActiveTasks();
+            adapter.updateTasks(taskList);
+            binding.addTask.setVisibility(View.VISIBLE); // pokaż przycisk
             return true;
         }
 
         return super.onOptionsItemSelected(item);
     }
-    private void showEditDialog(Task task) {
+
+        private void showEditDialog(Task task) {
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_add_task, null);
 
         EditText titleInput = dialogView.findViewById(R.id.input_title);
@@ -316,9 +323,8 @@ public class MainActivity extends AppCompatActivity {
                     task.setHighPriority(highPriorityInput.isChecked());
 
                     db.taskDao().update(task);
-                    taskList = db.taskDao().getAll();
+                    taskList = db.taskDao().getActiveTasks();
                     adapter.updateTasks(taskList);
-                    Snackbar.make(binding.getRoot(), "Zadanie zaktualizowane", Snackbar.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Anuluj", null)
                 .show();

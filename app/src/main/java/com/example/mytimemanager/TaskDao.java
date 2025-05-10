@@ -20,4 +20,10 @@ public interface TaskDao {
 
     @Query("SELECT * FROM Task WHERE id = :id LIMIT 1")
     Task findById(int id);
+
+    @Query("SELECT * FROM Task WHERE done = 1")
+    List<Task> getDoneTasks();
+
+    @Query("SELECT * FROM Task WHERE done = 0")
+    List<Task> getActiveTasks();
 }

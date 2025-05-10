@@ -1,31 +1,38 @@
 package com.example.mytimemanager;
 
+import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.TextView;
 
-import android.graphics.Color;
+import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
+import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.room.Room;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
-
-import androidx.annotation.NonNull;
-import androidx.core.content.ContextCompat;
-import androidx.recyclerview.widget.RecyclerView;
-
-import java.util.List;
 
 public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder> {
 
     private List<Task> taskList;
+    private final AppDatabase db;
+    private final Context context;
 
-    public TaskAdapter(List<Task> taskList) {
+    public TaskAdapter(List<Task> taskList, Context context) {
         this.taskList = taskList;
+        this.context = context;
+        this.db = Room.databaseBuilder(context, AppDatabase.class, "task-database")
+                .allowMainThreadQueries()
+                .fallbackToDestructiveMigration()
+                .build();
     }
 
     @NonNull
@@ -41,13 +48,27 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         holder.title.setText(task.getTitle());
         holder.description.setText(task.getDescription());
         holder.date.setText(task.getDate());
+
+        // Resetujemy listener przed ustawieniem stanu
+        holder.checkBox.setOnCheckedChangeListener(null);
         holder.checkBox.setChecked(task.isDone());
 
+        // Obsługa kliknięcia checkboxa
+        holder.checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            task.setDone(isChecked);
+            db.taskDao().update(task);
+
+            int pos = holder.getAdapterPosition();
+            if (pos != RecyclerView.NO_POSITION) {
+                taskList.remove(pos);
+                notifyItemRemoved(pos);
+            }
+        });
+
+        // Kolor karty zależny od priorytetu i terminu
         if (task.isHighPriority()) {
-            // Jeśli wysoki priorytet — bez względu na datę — zawsze czerwony
-            holder.cardView.setCardBackgroundColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.red));
+            holder.cardView.setCardBackgroundColor(ContextCompat.getColor(context, R.color.red));
         } else {
-            // Jeśli NIE wysoki priorytet — sprawdzamy ile dni do deadline
             SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
             try {
                 Date today = new Date();
@@ -58,17 +79,19 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                     long diffInDays = TimeUnit.MILLISECONDS.toDays(diffInMillies);
 
                     if (diffInDays <= 3) {
-                        holder.cardView.setCardBackgroundColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.red));
+                        holder.cardView.setCardBackgroundColor(ContextCompat.getColor(context, R.color.red));
                     } else if (diffInDays <= 10) {
-                        holder.cardView.setCardBackgroundColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.orange));
+                        holder.cardView.setCardBackgroundColor(ContextCompat.getColor(context, R.color.orange));
                     } else {
-                        holder.cardView.setCardBackgroundColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.green));
+                        holder.cardView.setCardBackgroundColor(ContextCompat.getColor(context, R.color.green));
                     }
                 }
             } catch (ParseException e) {
                 e.printStackTrace();
             }
         }
+
+        // Obsługa kliknięcia w kartę (np. do edycji)
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
                 listener.onItemClick(task);
@@ -76,10 +99,14 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         });
     }
 
-
     @Override
     public int getItemCount() {
         return taskList.size();
+    }
+
+    public void updateTasks(List<Task> newTasks) {
+        this.taskList = newTasks;
+        notifyDataSetChanged();
     }
 
     public static class TaskViewHolder extends RecyclerView.ViewHolder {
@@ -97,11 +124,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         }
     }
 
-    public void updateTasks(List<Task> newTasks) {
-        this.taskList = newTasks;
-        notifyDataSetChanged();
-    }
-
     public interface OnItemClickListener {
         void onItemClick(Task task);
     }
@@ -111,5 +133,4 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     public void setOnItemClickListener(OnItemClickListener listener) {
         this.listener = listener;
     }
-
 }
