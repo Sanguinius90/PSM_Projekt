@@ -11,8 +11,8 @@
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:fitsSystemWindows="true"
-        android:background="@color/green">
+        android:background="@color/green"
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
@@ -25,8 +25,11 @@
         android:id="@+id/task_recycler_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="8dp"
+        android:layout_margin="8dp"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
+        android:clipToPadding="false"
+        android:paddingBottom="80dp"
+        android:scrollbars="vertical"
         tools:listitem="@layout/task_item" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -46,4 +49,5 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:background="@color/green" />
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
