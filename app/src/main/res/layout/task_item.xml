@@ -10,7 +10,8 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="16dp">
+        android:padding="16dp"
+        android:minHeight="100dp">
 
         <TextView
             android:id="@+id/task_title"
@@ -41,8 +42,12 @@
             android:id="@+id/task_done"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/task_description"
             android:layout_alignParentEnd="true"
-            android:buttonTint="@android:color/white" />
+            android:layout_alignTop="@id/task_description"
+            android:layout_marginTop="1dp"
+            android:scaleX="2"
+            android:scaleY="2"
+            android:buttonTint="@android:color/white"
+            android:layout_marginEnd="4dp" />
     </RelativeLayout>
 </androidx.cardview.widget.CardView>

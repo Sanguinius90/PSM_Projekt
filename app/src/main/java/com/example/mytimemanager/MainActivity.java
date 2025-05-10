@@ -100,6 +100,7 @@ public class MainActivity extends AppCompatActivity {
         RecyclerView recyclerView = binding.taskRecyclerView;
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         adapter = new TaskAdapter(taskList);
+        adapter.setOnItemClickListener(task -> showEditDialog(task));
         recyclerView.setAdapter(adapter);
 
         // Dodawanie zadania
@@ -270,5 +271,56 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+    private void showEditDialog(Task task) {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_add_task, null);
+
+        EditText titleInput = dialogView.findViewById(R.id.input_title);
+        EditText descriptionInput = dialogView.findViewById(R.id.input_description);
+        EditText dateInput = dialogView.findViewById(R.id.input_date);
+        CheckBox highPriorityInput = dialogView.findViewById(R.id.input_high_priority);
+
+        // Wstaw dane z taska
+        titleInput.setText(task.getTitle());
+        descriptionInput.setText(task.getDescription());
+        dateInput.setText(task.getDate());
+        highPriorityInput.setChecked(task.isHighPriority());
+
+        // Obsługa kliknięcia w datę
+        dateInput.setOnClickListener(v -> {
+            MaterialDatePicker<Long> datePicker = MaterialDatePicker.Builder.datePicker()
+                    .setTitleText("Wybierz datę")
+                    .setSelection(MaterialDatePicker.todayInUtcMilliseconds())
+                    .build();
+
+            datePicker.addOnPositiveButtonClickListener(selection -> {
+                Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+                calendar.setTimeInMillis(selection);
+                String selectedDate = String.format("%02d.%02d.%04d",
+                        calendar.get(Calendar.DAY_OF_MONTH),
+                        calendar.get(Calendar.MONTH) + 1,
+                        calendar.get(Calendar.YEAR));
+                dateInput.setText(selectedDate);
+            });
+
+            datePicker.show(getSupportFragmentManager(), "MATERIAL_DATE_PICKER");
+        });
+
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Edytuj zadanie")
+                .setView(dialogView)
+                .setPositiveButton("Zapisz", (dialog, which) -> {
+                    task.setTitle(titleInput.getText().toString());
+                    task.setDescription(descriptionInput.getText().toString());
+                    task.setDate(dateInput.getText().toString());
+                    task.setHighPriority(highPriorityInput.isChecked());
+
+                    db.taskDao().update(task);
+                    taskList = db.taskDao().getAll();
+                    adapter.updateTasks(taskList);
+                    Snackbar.make(binding.getRoot(), "Zadanie zaktualizowane", Snackbar.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Anuluj", null)
+                .show();
     }
 }

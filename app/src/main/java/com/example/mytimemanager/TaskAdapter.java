@@ -69,6 +69,11 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 e.printStackTrace();
             }
         }
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onItemClick(task);
+            }
+        });
     }
 
 
@@ -96,4 +101,15 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         this.taskList = newTasks;
         notifyDataSetChanged();
     }
+
+    public interface OnItemClickListener {
+        void onItemClick(Task task);
+    }
+
+    private OnItemClickListener listener;
+
+    public void setOnItemClickListener(OnItemClickListener listener) {
+        this.listener = listener;
+    }
+
 }
