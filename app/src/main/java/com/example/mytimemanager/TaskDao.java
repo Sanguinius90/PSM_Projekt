@@ -26,4 +26,7 @@ public interface TaskDao {
 
     @Query("SELECT * FROM Task WHERE done = 0")
     List<Task> getActiveTasks();
+
+    @Query("SELECT * FROM task WHERE done = 0")
+    List<Task> getAllUnfinished();
 }

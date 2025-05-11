@@ -73,24 +73,34 @@ public class MainActivity extends AppCompatActivity {
 
         binding.navView.setNavigationItemSelectedListener(item -> {
             int id = item.getItemId();
+
             if (id == R.id.nav_active) {
                 currentView = ViewMode.ACTIVE;
                 taskList = db.taskDao().getActiveTasks();
+                filterOnlyUpcomingTasks(taskList);
                 sortTasksByDate(taskList);
                 adapter.updateTasks(taskList);
                 binding.addTask.show();
+
             } else if (id == R.id.nav_done) {
                 currentView = ViewMode.DONE;
                 taskList = db.taskDao().getDoneTasks();
                 sortTasksByDate(taskList);
                 adapter.updateTasks(taskList);
                 binding.addTask.hide();
+
+            } else if (id == R.id.nav_late) {
+                currentView = null;
+                updateLateTasks();
+                binding.addTask.hide();
             }
+
             binding.drawerLayout.closeDrawer(GravityCompat.END);
             return true;
         });
 
         taskList = db.taskDao().getActiveTasks();
+        filterOnlyUpcomingTasks(taskList);
         sortTasksByDate(taskList);
         adapter = new TaskAdapter(taskList, this);
         adapter.setOnItemClickListener(task -> showEditDialog(task));
@@ -147,6 +157,7 @@ public class MainActivity extends AppCompatActivity {
                             Task newTask = new Task(title, description, date, false, highPriority);
                             db.taskDao().insert(newTask);
                             taskList = db.taskDao().getActiveTasks();
+                            filterOnlyUpcomingTasks(taskList);
                             sortTasksByDate(taskList);
                             adapter.updateTasks(taskList);
                         } else {
@@ -171,12 +182,20 @@ public class MainActivity extends AppCompatActivity {
                 Task removedTask = taskList.get(position);
                 db.taskDao().delete(removedTask);
 
-                updateTaskList();
+                if (currentView == ViewMode.ACTIVE || currentView == ViewMode.DONE) {
+                    updateTaskList();
+                } else {
+                    updateLateTasks();
+                }
 
                 Snackbar.make(binding.getRoot(), "Usunięto zadanie", Snackbar.LENGTH_LONG)
                         .setAction("Cofnij", v -> {
                             db.taskDao().insert(removedTask);
-                            updateTaskList();
+                            if (currentView == ViewMode.ACTIVE || currentView == ViewMode.DONE) {
+                                updateTaskList();
+                            } else {
+                                updateLateTasks();
+                            }
                         }).show();
             }
 
@@ -303,9 +322,17 @@ public class MainActivity extends AppCompatActivity {
     private void updateTaskList() {
         if (currentView == ViewMode.ACTIVE) {
             taskList = db.taskDao().getActiveTasks();
-        } else {
+            filterOnlyUpcomingTasks(taskList);
+        } else if (currentView == ViewMode.DONE) {
             taskList = db.taskDao().getDoneTasks();
         }
+        sortTasksByDate(taskList);
+        adapter.updateTasks(taskList);
+    }
+
+    private void updateLateTasks() {
+        taskList = db.taskDao().getAllUnfinished();
+        filterOverdueTasks(taskList);
         sortTasksByDate(taskList);
         adapter.updateTasks(taskList);
     }
@@ -314,17 +341,43 @@ public class MainActivity extends AppCompatActivity {
         SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
         tasks.sort((t1, t2) -> {
             try {
-                // Najpierw sortowanie po priorytecie (true przed false)
                 if (t1.isHighPriority() && !t2.isHighPriority()) return -1;
                 if (!t1.isHighPriority() && t2.isHighPriority()) return 1;
 
-                // Jeśli ten sam priorytet — sortuj po dacie
                 Date d1 = sdf.parse(t1.getDate());
                 Date d2 = sdf.parse(t2.getDate());
                 return Objects.requireNonNull(d1).compareTo(d2);
             } catch (Exception e) {
                 e.printStackTrace();
                 return 0;
+            }
+        });
+    }
+
+    private void filterOverdueTasks(List<Task> tasks) {
+        SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+        Date today = new Date();
+
+        tasks.removeIf(task -> {
+            try {
+                Date taskDate = sdf.parse(task.getDate());
+                return taskDate == null || !taskDate.before(today);
+            } catch (Exception e) {
+                return true;
+            }
+        });
+    }
+
+    private void filterOnlyUpcomingTasks(List<Task> tasks) {
+        SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+        Date today = new Date();
+
+        tasks.removeIf(task -> {
+            try {
+                Date taskDate = sdf.parse(task.getDate());
+                return taskDate != null && taskDate.before(today);
+            } catch (Exception e) {
+                return true;
             }
         });
     }
