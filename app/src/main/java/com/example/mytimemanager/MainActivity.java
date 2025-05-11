@@ -8,6 +8,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -16,8 +17,10 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.GravityCompat;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -46,6 +49,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        binding = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
 
         NotificationHelper.createNotificationChannel(this);
 
@@ -58,9 +63,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        binding = ActivityMainBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
-
         db = Room.databaseBuilder(getApplicationContext(),
                         AppDatabase.class, "task-database")
                 .allowMainThreadQueries()
@@ -68,6 +70,24 @@ public class MainActivity extends AppCompatActivity {
                 .build();
 
         setSupportActionBar(binding.toolbar);
+
+        // 🔧 ZMIANA: Obsługa kliknięcia pozycji w Navigation Drawer
+        binding.navView.setNavigationItemSelectedListener(item -> {
+            int id = item.getItemId();
+            if (id == R.id.nav_active) {
+                currentView = ViewMode.ACTIVE;
+                taskList = db.taskDao().getActiveTasks();
+                adapter.updateTasks(taskList);
+                binding.addTask.show();
+            } else if (id == R.id.nav_done) {
+                currentView = ViewMode.DONE;
+                taskList = db.taskDao().getDoneTasks();
+                adapter.updateTasks(taskList);
+                binding.addTask.hide();
+            }
+            binding.drawerLayout.closeDrawer(GravityCompat.END);
+            return true;
+        });
 
         taskList = db.taskDao().getActiveTasks();
         adapter = new TaskAdapter(taskList, this);
@@ -101,21 +121,18 @@ public class MainActivity extends AppCompatActivity {
                 datePicker.addOnPositiveButtonClickListener(selection -> {
                     Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
                     calendar.setTimeInMillis(selection);
-
                     String selectedDate = String.format(
                             "%02d.%02d.%04d",
                             calendar.get(Calendar.DAY_OF_MONTH),
                             calendar.get(Calendar.MONTH) + 1,
-                            calendar.get(Calendar.YEAR)
-                    );
-
+                            calendar.get(Calendar.YEAR));
                     dateInput.setText(selectedDate);
                 });
 
                 datePicker.show(getSupportFragmentManager(), "MATERIAL_DATE_PICKER");
             });
 
-            new androidx.appcompat.app.AlertDialog.Builder(this)
+            new AlertDialog.Builder(this)
                     .setTitle("Dodaj zadanie")
                     .setView(dialogView)
                     .setPositiveButton("Dodaj", (dialog, which) -> {
@@ -218,32 +235,19 @@ public class MainActivity extends AppCompatActivity {
         itemTouchHelper.attachToRecyclerView(binding.taskRecyclerView);
     }
 
+    // 🔧 ZMIANA: Dodaj menu po PRAWEJ stronie Toolbara
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_main, menu);
+        getMenuInflater().inflate(R.menu.top_app_menu, menu);
         return true;
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
-
-        if (id == R.id.action_done) {
-            currentView = ViewMode.DONE;
-            taskList = db.taskDao().getDoneTasks();
-            adapter.updateTasks(taskList);
-            binding.addTask.setVisibility(View.GONE);
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == R.id.menu_drawer_open) {
+            binding.drawerLayout.openDrawer(GravityCompat.END);
             return true;
         }
-
-        if (id == R.id.action_active) {
-            currentView = ViewMode.ACTIVE;
-            taskList = db.taskDao().getActiveTasks();
-            adapter.updateTasks(taskList);
-            binding.addTask.setVisibility(View.VISIBLE);
-            return true;
-        }
-
         return super.onOptionsItemSelected(item);
     }
 
@@ -278,7 +282,7 @@ public class MainActivity extends AppCompatActivity {
             datePicker.show(getSupportFragmentManager(), "MATERIAL_DATE_PICKER");
         });
 
-        new androidx.appcompat.app.AlertDialog.Builder(this)
+        new AlertDialog.Builder(this)
                 .setTitle("Edytuj zadanie")
                 .setView(dialogView)
                 .setPositiveButton("Zapisz", (dialog, which) -> {
