@@ -71,17 +71,18 @@ public class MainActivity extends AppCompatActivity {
 
         setSupportActionBar(binding.toolbar);
 
-        // 🔧 ZMIANA: Obsługa kliknięcia pozycji w Navigation Drawer
         binding.navView.setNavigationItemSelectedListener(item -> {
             int id = item.getItemId();
             if (id == R.id.nav_active) {
                 currentView = ViewMode.ACTIVE;
                 taskList = db.taskDao().getActiveTasks();
+                sortTasksByDate(taskList);
                 adapter.updateTasks(taskList);
                 binding.addTask.show();
             } else if (id == R.id.nav_done) {
                 currentView = ViewMode.DONE;
                 taskList = db.taskDao().getDoneTasks();
+                sortTasksByDate(taskList);
                 adapter.updateTasks(taskList);
                 binding.addTask.hide();
             }
@@ -90,6 +91,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         taskList = db.taskDao().getActiveTasks();
+        sortTasksByDate(taskList);
         adapter = new TaskAdapter(taskList, this);
         adapter.setOnItemClickListener(task -> showEditDialog(task));
 
@@ -145,6 +147,7 @@ public class MainActivity extends AppCompatActivity {
                             Task newTask = new Task(title, description, date, false, highPriority);
                             db.taskDao().insert(newTask);
                             taskList = db.taskDao().getActiveTasks();
+                            sortTasksByDate(taskList);
                             adapter.updateTasks(taskList);
                         } else {
                             Toast.makeText(this, "Tytuł nie może być pusty!", Toast.LENGTH_SHORT).show();
@@ -235,7 +238,6 @@ public class MainActivity extends AppCompatActivity {
         itemTouchHelper.attachToRecyclerView(binding.taskRecyclerView);
     }
 
-    // 🔧 ZMIANA: Dodaj menu po PRAWEJ stronie Toolbara
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.top_app_menu, menu);
@@ -304,6 +306,26 @@ public class MainActivity extends AppCompatActivity {
         } else {
             taskList = db.taskDao().getDoneTasks();
         }
+        sortTasksByDate(taskList);
         adapter.updateTasks(taskList);
+    }
+
+    private void sortTasksByDate(List<Task> tasks) {
+        SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+        tasks.sort((t1, t2) -> {
+            try {
+                // Najpierw sortowanie po priorytecie (true przed false)
+                if (t1.isHighPriority() && !t2.isHighPriority()) return -1;
+                if (!t1.isHighPriority() && t2.isHighPriority()) return 1;
+
+                // Jeśli ten sam priorytet — sortuj po dacie
+                Date d1 = sdf.parse(t1.getDate());
+                Date d2 = sdf.parse(t2.getDate());
+                return Objects.requireNonNull(d1).compareTo(d2);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return 0;
+            }
+        });
     }
 }
