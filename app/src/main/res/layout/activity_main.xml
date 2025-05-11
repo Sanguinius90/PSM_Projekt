@@ -63,5 +63,8 @@
         android:layout_height="match_parent"
         android:layout_gravity="end"
         app:menu="@menu/drawer_menu"
-        android:fitsSystemWindows="true"/>
+        app:itemTextAppearance="@style/DrawerMenuTextStyle"
+        app:itemTextColor="@color/green"
+        android:fitsSystemWindows="true" />
+
 </androidx.drawerlayout.widget.DrawerLayout>

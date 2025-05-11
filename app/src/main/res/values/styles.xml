@@ -15,4 +15,9 @@
         <item name="colorOnPrimary">@android:color/white</item>
     </style>
 
+    <style name="DrawerMenuTextStyle" parent="TextAppearance.Material3.BodyLarge">
+        <item name="android:textSize">18sp</item>         <!-- większy tekst -->
+        <item name="android:textColor">@color/green</item> <!-- Twój zielony kolor -->
+    </style>
+
 </resources>
