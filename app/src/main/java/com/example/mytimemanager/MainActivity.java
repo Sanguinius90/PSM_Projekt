@@ -93,6 +93,14 @@ public class MainActivity extends AppCompatActivity {
                 currentView = null;
                 updateLateTasks();
                 binding.addTask.hide();
+
+            } else if (id == R.id.nav_deleted) {
+                currentView = null;
+                taskList = db.taskDao().getDeletedTasks();
+                sortTasksByDate(taskList);
+                adapter.updateTasks(taskList);
+                binding.addTask.hide();
+
             }
 
             binding.drawerLayout.closeDrawer(GravityCompat.END);
@@ -168,7 +176,19 @@ public class MainActivity extends AppCompatActivity {
                     .show();
         });
 
-        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
+        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+
+            @Override
+            public int getMovementFlags(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+                if (currentView == null) {
+                    // Jesteś w zakładce „Usunięte” – pozwól na swipe w obie strony
+                    return makeMovementFlags(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT);
+                } else {
+                    // Inne zakładki – tylko swipe w lewo
+                    return makeMovementFlags(0, ItemTouchHelper.LEFT);
+                }
+            }
+
             @Override
             public boolean onMove(@NonNull RecyclerView recyclerView,
                                   @NonNull RecyclerView.ViewHolder viewHolder,
@@ -179,24 +199,45 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                 int position = viewHolder.getAdapterPosition();
-                Task removedTask = taskList.get(position);
-                db.taskDao().delete(removedTask);
+                Task swipedTask = taskList.get(position);
 
-                if (currentView == ViewMode.ACTIVE || currentView == ViewMode.DONE) {
-                    updateTaskList();
+                if (currentView == null) { // Usunięte
+                    if (direction == ItemTouchHelper.RIGHT) {
+                        // PRZYWRÓĆ ZADANIE
+                        swipedTask.setDeleted(false);
+                        db.taskDao().update(swipedTask);
+                        updateDeletedTasks();
+
+                        Snackbar.make(binding.getRoot(), "Przywrócono zadanie", Snackbar.LENGTH_LONG)
+                                .setAction("Cofnij", v -> {
+                                    swipedTask.setDeleted(true);
+                                    db.taskDao().update(swipedTask);
+                                    updateDeletedTasks();
+                                }).show();
+                    } else {
+                        // OPCJONALNIE: permanentne usunięcie
+                        db.taskDao().delete(swipedTask);
+                        updateDeletedTasks();
+
+                        Snackbar.make(binding.getRoot(), "Usunięto na stałe", Snackbar.LENGTH_LONG)
+                                .setAction("Cofnij", v -> {
+                                    db.taskDao().insert(swipedTask);
+                                    updateDeletedTasks();
+                                }).show();
+                    }
                 } else {
-                    updateLateTasks();
-                }
+                    // Aktywne / Skończone → oznacz jako deleted
+                    swipedTask.setDeleted(true);
+                    db.taskDao().update(swipedTask);
+                    updateTaskList();
 
-                Snackbar.make(binding.getRoot(), "Usunięto zadanie", Snackbar.LENGTH_LONG)
-                        .setAction("Cofnij", v -> {
-                            db.taskDao().insert(removedTask);
-                            if (currentView == ViewMode.ACTIVE || currentView == ViewMode.DONE) {
+                    Snackbar.make(binding.getRoot(), "Usunięto zadanie", Snackbar.LENGTH_LONG)
+                            .setAction("Cofnij", v -> {
+                                swipedTask.setDeleted(false);
+                                db.taskDao().update(swipedTask);
                                 updateTaskList();
-                            } else {
-                                updateLateTasks();
-                            }
-                        }).show();
+                            }).show();
+                }
             }
 
             @Override
@@ -234,9 +275,12 @@ public class MainActivity extends AppCompatActivity {
                     paint.setColor(ContextCompat.getColor(MainActivity.this, colorResId));
                 }
 
+                float radius = 50f;
+                RectF rectF;
+
                 if (dX < 0) {
-                    float radius = 50f;
-                    RectF rectF = new RectF(itemView.getRight() + dX, itemView.getTop(),
+                    // Swipe w lewo (usuń)
+                    rectF = new RectF(itemView.getRight() + dX, itemView.getTop(),
                             itemView.getRight(), itemView.getBottom());
                     canvas.drawRoundRect(rectF, radius, radius, paint);
 
@@ -249,6 +293,12 @@ public class MainActivity extends AppCompatActivity {
                         icon.setBounds(iconLeft, iconTop, iconLeft + iconSize, iconTop + iconSize);
                         icon.draw(canvas);
                     }
+
+                } else if (dX > 0 && currentView == null) {
+                    // Swipe w prawo (przywróć) – tylko tło, bez ikonki
+                    rectF = new RectF(itemView.getLeft(), itemView.getTop(),
+                            itemView.getLeft() + dX, itemView.getBottom());
+                    canvas.drawRoundRect(rectF, radius, radius, paint);
                 }
                 super.onChildDraw(canvas, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
             }
@@ -380,5 +430,11 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
         });
+    }
+
+    private void updateDeletedTasks() {
+        taskList = db.taskDao().getDeletedTasks();
+        sortTasksByDate(taskList);
+        adapter.updateTasks(taskList);
     }
 }

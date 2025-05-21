@@ -12,6 +12,7 @@ public class Task {
     private String date;
     private boolean done;
     private boolean highPriority;
+    private boolean deleted;
 
     public Task(String title, String description, String date, boolean done, boolean highPriority) {
         this.title = title;
@@ -19,6 +20,7 @@ public class Task {
         this.date = date;
         this.done = done;
         this.highPriority = highPriority;
+        this.deleted = false;
     }
 
     public int getId() {
@@ -47,6 +49,8 @@ public class Task {
 
     public boolean isHighPriority() {return highPriority;}
 
+    public boolean isDeleted() { return deleted; }
+
     public void setTitle(String title) {
         this.title = title;
     }
@@ -64,4 +68,6 @@ public class Task {
     }
 
     public void setHighPriority(boolean highPriority) {this.highPriority = highPriority;}
+
+    public void setDeleted(boolean deleted) { this.deleted = deleted; }
 }

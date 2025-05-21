@@ -12,21 +12,24 @@ public interface TaskDao {
     @Insert
     void insert(Task task);
 
-    @Delete
-    void delete(Task task);
-
     @Update
     void update(Task task);
 
-    @Query("SELECT * FROM Task WHERE id = :id LIMIT 1")
-    Task findById(int id);
+    @Delete
+    void delete(Task task);
 
-    @Query("SELECT * FROM Task WHERE done = 1")
+    @Query("SELECT * FROM task WHERE id = :taskId LIMIT 1")
+    Task findById(int taskId);
+
+    @Query("SELECT * FROM task WHERE deleted = 0 AND done = 1")
     List<Task> getDoneTasks();
 
-    @Query("SELECT * FROM Task WHERE done = 0")
+    @Query("SELECT * FROM task WHERE deleted = 0 AND done = 0")
     List<Task> getActiveTasks();
 
-    @Query("SELECT * FROM task WHERE done = 0")
+    @Query("SELECT * FROM task WHERE deleted = 0 AND done = 0")
     List<Task> getAllUnfinished();
+
+    @Query("SELECT * FROM task WHERE deleted = 1")
+    List<Task> getDeletedTasks();
 }

@@ -52,7 +52,8 @@ public class TaskWidget extends AppWidgetProvider {
             if (taskId != -1) {
                 Task task = db.taskDao().findById(taskId);
                 if (task != null) {
-                    db.taskDao().delete(task);
+                    task.setDeleted(true);
+                    db.taskDao().update(task);
                 }
             }
         }
