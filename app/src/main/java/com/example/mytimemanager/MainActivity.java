@@ -1,6 +1,7 @@
 package com.example.mytimemanager;
 
 import android.Manifest;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -42,6 +43,9 @@ public class MainActivity extends AppCompatActivity {
     private List<Task> taskList = new ArrayList<>();
     private TaskAdapter adapter;
     private AppDatabase db;
+    private SharedPreferences prefs;
+    private static final String PREF_GOAL_TEXT = "goal_text";
+    private static final String PREF_GOAL_TARGET = "goal_target";
 
     private enum ViewMode { ACTIVE, DONE }
     private ViewMode currentView = ViewMode.ACTIVE;
@@ -52,8 +56,15 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        NotificationHelper.createNotificationChannel(this);
+        db = Room.databaseBuilder(getApplicationContext(),
+                        AppDatabase.class, "task-database")
+                .allowMainThreadQueries()
+                .fallbackToDestructiveMigration()
+                .build();
 
+        prefs = getSharedPreferences("goal_prefs", MODE_PRIVATE);
+
+        NotificationHelper.createNotificationChannel(this);
         OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(ReminderWorker.class).build();
         WorkManager.getInstance(this).enqueue(request);
 
@@ -63,12 +74,30 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        db = Room.databaseBuilder(getApplicationContext(),
-                        AppDatabase.class, "task-database")
-                .allowMainThreadQueries()
-                .fallbackToDestructiveMigration()
-                .build();
+        binding.goalContainer.setOnClickListener(v -> {
+            View dialogView = getLayoutInflater().inflate(R.layout.dialog_goal, null);
+            EditText goalInput = dialogView.findViewById(R.id.goal_input);
+            EditText targetInput = dialogView.findViewById(R.id.target_input);
 
+            new AlertDialog.Builder(this)
+                    .setTitle("Ustaw cel")
+                    .setView(dialogView)
+                    .setPositiveButton("Zapisz", (dialog, which) -> {
+                        String goalText = goalInput.getText().toString();
+                        int target = Integer.parseInt(targetInput.getText().toString());
+
+                        prefs.edit()
+                                .putString(PREF_GOAL_TEXT, goalText)
+                                .putInt(PREF_GOAL_TARGET, target)
+                                .apply();
+
+                        updateGoalView();
+                    })
+                    .setNegativeButton("Anuluj", null)
+                    .show();
+        });
+
+        updateGoalView();
         setSupportActionBar(binding.toolbar);
 
         binding.navView.setNavigationItemSelectedListener(item -> {
@@ -80,6 +109,9 @@ public class MainActivity extends AppCompatActivity {
                 filterOnlyUpcomingTasks(taskList);
                 sortTasksByDate(taskList);
                 adapter.updateTasks(taskList);
+
+                binding.taskRecyclerView.setVisibility(View.VISIBLE);
+                binding.fragmentContainer.setVisibility(View.GONE);
                 binding.addTask.show();
 
             } else if (id == R.id.nav_done) {
@@ -87,12 +119,18 @@ public class MainActivity extends AppCompatActivity {
                 taskList = db.taskDao().getDoneTasks();
                 sortTasksByDate(taskList);
                 adapter.updateTasks(taskList);
+
+                binding.taskRecyclerView.setVisibility(View.VISIBLE);
+                binding.fragmentContainer.setVisibility(View.GONE);
                 binding.addTask.hide();
 
             } else if (id == R.id.nav_late) {
                 currentView = null;
                 updateLateTasks();
                 binding.addTask.hide();
+
+                binding.taskRecyclerView.setVisibility(View.VISIBLE);
+                binding.fragmentContainer.setVisibility(View.GONE);
 
             } else if (id == R.id.nav_deleted) {
                 currentView = null;
@@ -101,6 +139,20 @@ public class MainActivity extends AppCompatActivity {
                 adapter.updateTasks(taskList);
                 binding.addTask.hide();
 
+                binding.taskRecyclerView.setVisibility(View.VISIBLE);
+                binding.fragmentContainer.setVisibility(View.GONE);
+
+            } else if (id == R.id.nav_stats) {
+                binding.fragmentContainer.setVisibility(View.VISIBLE);
+
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, new StatisticsFragment())
+                        .addToBackStack(null)
+                        .commit();
+
+                binding.taskRecyclerView.setVisibility(View.GONE);
+                binding.addTask.hide();
             }
 
             binding.drawerLayout.closeDrawer(GravityCompat.END);
@@ -111,6 +163,7 @@ public class MainActivity extends AppCompatActivity {
         filterOnlyUpcomingTasks(taskList);
         sortTasksByDate(taskList);
         adapter = new TaskAdapter(taskList, this);
+        adapter.setOnTaskStatusChangedListener(() -> updateGoalView());
         adapter.setOnItemClickListener(task -> showEditDialog(task));
 
         RecyclerView recyclerView = binding.taskRecyclerView;
@@ -378,6 +431,24 @@ public class MainActivity extends AppCompatActivity {
         }
         sortTasksByDate(taskList);
         adapter.updateTasks(taskList);
+        updateGoalView();
+    }
+
+    private void updateGoalView() {
+        if (db == null) return; // zabezpieczenie
+
+        String text = prefs.getString(PREF_GOAL_TEXT, null);
+        int target = prefs.getInt(PREF_GOAL_TARGET, 0);
+        int done = db.taskDao().getDoneTasks().size();
+
+        if (text != null && target > 0) {
+            binding.goalText.setText(text + " (" + done + "/" + target + ")");
+            binding.goalProgress.setMax(target);
+            binding.goalProgress.setProgress(Math.min(done, target));
+        } else {
+            binding.goalText.setText("Brak celu. Kliknij, aby ustawić");
+            binding.goalProgress.setProgress(0);
+        }
     }
 
     private void updateLateTasks() {

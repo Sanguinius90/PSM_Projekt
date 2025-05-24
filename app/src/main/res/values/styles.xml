@@ -20,4 +20,9 @@
         <item name="android:textColor">@color/green</item> <!-- Twój zielony kolor -->
     </style>
 
+    <style name="SpinnerTheme" parent="Widget.AppCompat.Spinner">
+        <item name="android:textSize">22sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
 </resources>

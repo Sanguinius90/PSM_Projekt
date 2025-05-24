@@ -14,6 +14,13 @@
         android:background="@color/grey"
         android:fitsSystemWindows="true">
 
+        <FrameLayout
+            android:id="@+id/fragment_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_margin="8dp"
+            android:visibility="gone" />
+
         <com.google.android.material.appbar.AppBarLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -49,12 +56,39 @@
             app:tint="@android:color/white"
             app:srcCompat="@android:drawable/ic_input_add" />
 
-        <com.google.android.material.bottomnavigation.BottomNavigationView
-            android:id="@+id/bottom_nav"
+        <!-- Pasek celu (cel użytkownika) -->
+        <LinearLayout
+            android:id="@+id/goalContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom"
-            android:background="@color/green" />
+            android:orientation="vertical"
+            android:padding="30dp"
+            android:background="@color/green"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true"
+            android:elevation="8dp">
+
+            <TextView
+                android:id="@+id/goalText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Brak celu. Kliknij, aby ustawić"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:layout_marginBottom="4dp" />
+
+            <ProgressBar
+                android:id="@+id/goalProgress"
+                android:layout_width="match_parent"
+                android:layout_height="16dp"
+                style="@android:style/Widget.ProgressBar.Horizontal"
+                android:progress="0"
+                android:max="100"
+                android:progressDrawable="@drawable/progress_drawable" />
+        </LinearLayout>
+
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
     <com.google.android.material.navigation.NavigationView

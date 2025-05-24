@@ -42,6 +42,16 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         return new TaskViewHolder(itemView);
     }
 
+    public interface OnTaskStatusChangedListener {
+        void onStatusChanged();
+    }
+
+    private OnTaskStatusChangedListener onTaskStatusChangedListener;
+
+    public void setOnTaskStatusChangedListener(OnTaskStatusChangedListener listener) {
+        this.onTaskStatusChangedListener = listener;
+    }
+
     @Override
     public void onBindViewHolder(@NonNull TaskViewHolder holder, int position) {
         Task task = taskList.get(position);
@@ -57,6 +67,9 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         holder.checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
             task.setDone(isChecked);
             db.taskDao().update(task);
+            if (onTaskStatusChangedListener != null) {
+                onTaskStatusChangedListener.onStatusChanged();
+            }
 
             int pos = holder.getAdapterPosition();
             if (pos != RecyclerView.NO_POSITION) {
