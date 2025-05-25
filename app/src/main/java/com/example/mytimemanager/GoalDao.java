@@ -1,6 +1,7 @@
 package com.example.mytimemanager;
 
 import androidx.room.Dao;
+import androidx.room.Delete;
 import androidx.room.Insert;
 import androidx.room.Query;
 
@@ -14,4 +15,8 @@ public interface GoalDao {
 
     @Query("SELECT * FROM GoalHistory ORDER BY id DESC")
     List<GoalHistory> getAllGoals();
+
+    @Delete
+    void delete(GoalHistory goal);
+
 }

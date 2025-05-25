@@ -75,20 +75,41 @@ public class MainActivity extends AppCompatActivity {
         }
 
         binding.goalContainer.setOnClickListener(v -> {
+            String currentGoal = prefs.getString(PREF_GOAL_TEXT, null);
+            int currentTarget = prefs.getInt(PREF_GOAL_TARGET, 0);
+            int currentOffset = prefs.getInt("done_offset", 0);
+
             View dialogView = getLayoutInflater().inflate(R.layout.dialog_goal, null);
             EditText goalInput = dialogView.findViewById(R.id.goal_input);
             EditText targetInput = dialogView.findViewById(R.id.target_input);
 
+            if (currentGoal != null && currentTarget > 0) {
+                goalInput.setText(currentGoal);
+                targetInput.setText(String.valueOf(currentTarget));
+            }
+
             new AlertDialog.Builder(this)
-                    .setTitle("Ustaw cel")
+                    .setTitle(currentGoal != null ? "Edytuj cel" : "Ustaw cel")
                     .setView(dialogView)
                     .setPositiveButton("Zapisz", (dialog, which) -> {
-                        String goalText = goalInput.getText().toString();
-                        int target = Integer.parseInt(targetInput.getText().toString());
+                        String newText = goalInput.getText().toString().trim();
+                        int newTarget;
+
+                        try {
+                            newTarget = Integer.parseInt(targetInput.getText().toString().trim());
+                        } catch (NumberFormatException e) {
+                            Toast.makeText(this, "Nieprawidłowa liczba zadań", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+
+                        if (newTarget <= 0 || newText.isEmpty()) {
+                            Toast.makeText(this, "Uzupełnij wszystkie pola poprawnie", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
 
                         prefs.edit()
-                                .putString(PREF_GOAL_TEXT, goalText)
-                                .putInt(PREF_GOAL_TARGET, target)
+                                .putString(PREF_GOAL_TEXT, newText)
+                                .putInt(PREF_GOAL_TARGET, newTarget)
                                 .apply();
 
                         updateGoalView();
@@ -469,35 +490,47 @@ public class MainActivity extends AppCompatActivity {
 
         String text = prefs.getString(PREF_GOAL_TEXT, null);
         int target = prefs.getInt(PREF_GOAL_TARGET, 0);
-        int done = db.taskDao().getDoneTasks().size();
+        int totalDone = db.taskDao().getDoneTasks().size();
+        int offset = prefs.getInt("done_offset", 0);
+        int done = Math.max(0, totalDone - offset);
+
 
         if (text != null && target > 0) {
-            binding.goalText.setText(text + " (" + done + "/" + target + ")");
-            binding.goalProgress.setMax(target);
-            binding.goalProgress.setProgress(Math.min(done, target));
-
             if (done >= target) {
+                prefs.edit()
+                        .remove(PREF_GOAL_TEXT)
+                        .remove(PREF_GOAL_TARGET)
+                        .remove("done_offset")
+                        .apply();
+                // Cel ukończony
                 GoalHistory goal = new GoalHistory();
                 goal.title = text;
                 goal.target = target;
                 goal.completedCount = done;
                 goal.completedDate = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(new Date());
-
                 db.goalDao().insert(goal);
+
+                Toast.makeText(this, "Cel ukończony. GRATULACJE!", Toast.LENGTH_LONG).show();
+
+                // Resetuj i poproś o nowy cel
                 prefs.edit().remove(PREF_GOAL_TEXT).remove(PREF_GOAL_TARGET).apply();
+                promptNewGoal();
 
-                Toast.makeText(this, "🎉 Cel ukończony i zapisany!", Toast.LENGTH_LONG).show();
-
-                // Wyzeruj widok
+                // Ustaw widok domyślny
                 binding.goalText.setText("Brak celu. Kliknij, aby ustawić");
                 binding.goalProgress.setProgress(0);
+            } else {
+                // Pokazuj postęp
+                binding.goalText.setText(text + " (" + done + "/" + target + ")");
+                binding.goalProgress.setMax(target);
+                binding.goalProgress.setProgress(Math.min(done, target));
             }
-
         } else {
             binding.goalText.setText("Brak celu. Kliknij, aby ustawić");
             binding.goalProgress.setProgress(0);
         }
     }
+
 
     private void updateLateTasks() {
         taskList = db.taskDao().getAllUnfinished();
@@ -555,5 +588,10 @@ public class MainActivity extends AppCompatActivity {
         taskList = db.taskDao().getDeletedTasks();
         sortTasksByDate(taskList);
         adapter.updateTasks(taskList);
+    }
+    private void promptNewGoal() {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_goal, null);
+        EditText goalInput = dialogView.findViewById(R.id.goal_input);
+        EditText targetInput = dialogView.findViewById(R.id.target_input);
     }
 }
