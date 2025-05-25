@@ -43,9 +43,7 @@ public class GoalsFragment extends Fragment {
         adapter = new GoalAdapter(goals);
         recyclerView.setAdapter(adapter);
 
-        // Swipe-to-delete z efektem tła i ikony
         ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
-
             @Override
             public boolean onMove(@NonNull RecyclerView recyclerView,
                                   @NonNull RecyclerView.ViewHolder viewHolder,
@@ -56,18 +54,13 @@ public class GoalsFragment extends Fragment {
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                 int position = viewHolder.getAdapterPosition();
-                GoalHistory removedGoal = goals.get(position);
+                GoalHistory deletedGoal = adapter.getItem(position);
 
-                db.goalDao().delete(removedGoal);
-                goals.remove(position);
-                adapter.notifyItemRemoved(position);
+                db.goalDao().delete(deletedGoal);
+                adapter.removeItem(position);
 
-                Snackbar.make(recyclerView, "Cel usunięty", Snackbar.LENGTH_LONG)
-                        .setAction("Cofnij", v -> {
-                            db.goalDao().insert(removedGoal);
-                            goals.add(position, removedGoal);
-                            adapter.notifyItemInserted(position);
-                        }).show();
+                ((MainActivity) requireActivity()).showUndoSnackbar(deletedGoal, position, adapter);
+
             }
 
             @Override
@@ -103,4 +96,3 @@ public class GoalsFragment extends Fragment {
         return view;
     }
 }
-

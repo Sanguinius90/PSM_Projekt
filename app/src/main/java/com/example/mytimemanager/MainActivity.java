@@ -383,7 +383,6 @@ public class MainActivity extends AppCompatActivity {
                 RectF rectF;
 
                 if (dX < 0) {
-                    // Swipe w lewo (usuń)
                     rectF = new RectF(itemView.getRight() + dX, itemView.getTop(),
                             itemView.getRight(), itemView.getBottom());
                     canvas.drawRoundRect(rectF, radius, radius, paint);
@@ -399,7 +398,6 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                 } else if (dX > 0 && currentView == null) {
-                    // Swipe w prawo (przywróć) – tylko tło, bez ikonki
                     rectF = new RectF(itemView.getLeft(), itemView.getTop(),
                             itemView.getLeft() + dX, itemView.getBottom());
                     canvas.drawRoundRect(rectF, radius, radius, paint);
@@ -502,7 +500,6 @@ public class MainActivity extends AppCompatActivity {
                         .remove(PREF_GOAL_TARGET)
                         .remove("done_offset")
                         .apply();
-                // Cel ukończony
                 GoalHistory goal = new GoalHistory();
                 goal.title = text;
                 goal.target = target;
@@ -512,15 +509,12 @@ public class MainActivity extends AppCompatActivity {
 
                 Toast.makeText(this, "Cel ukończony. GRATULACJE!", Toast.LENGTH_LONG).show();
 
-                // Resetuj i poproś o nowy cel
                 prefs.edit().remove(PREF_GOAL_TEXT).remove(PREF_GOAL_TARGET).apply();
                 promptNewGoal();
 
-                // Ustaw widok domyślny
                 binding.goalText.setText("Brak celu. Kliknij, aby ustawić");
                 binding.goalProgress.setProgress(0);
             } else {
-                // Pokazuj postęp
                 binding.goalText.setText(text + " (" + done + "/" + target + ")");
                 binding.goalProgress.setMax(target);
                 binding.goalProgress.setProgress(Math.min(done, target));
@@ -593,5 +587,15 @@ public class MainActivity extends AppCompatActivity {
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_goal, null);
         EditText goalInput = dialogView.findViewById(R.id.goal_input);
         EditText targetInput = dialogView.findViewById(R.id.target_input);
+    }
+
+    public void showUndoSnackbar(GoalHistory deletedGoal, int position, GoalAdapter adapter) {
+        Snackbar.make(findViewById(R.id.drawer_layout), "Cel usunięty", Snackbar.LENGTH_LONG)
+                .setAction("Cofnij", v -> {
+                    AppDatabase db = AppDatabase.getInstance(this);
+                    db.goalDao().insert(deletedGoal);
+                    adapter.restoreItem(deletedGoal, position);
+                })
+                .show();
     }
 }

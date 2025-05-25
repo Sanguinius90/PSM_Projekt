@@ -47,4 +47,19 @@ public class GoalAdapter extends RecyclerView.Adapter<GoalAdapter.GoalViewHolder
             date = view.findViewById(R.id.goal_date);
         }
     }
+
+    public GoalHistory getItem(int position) {
+        return goalList.get(position);
+    }
+
+    public void removeItem(int position) {
+        goalList.remove(position);
+        notifyItemRemoved(position);
+    }
+
+    public void restoreItem(GoalHistory goal, int position) {
+        goalList.add(position, goal);
+        notifyItemInserted(position);
+    }
+
 }
