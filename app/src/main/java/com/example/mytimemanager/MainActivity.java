@@ -108,7 +108,11 @@ public class MainActivity extends AppCompatActivity {
                 taskList = db.taskDao().getActiveTasks();
                 filterOnlyUpcomingTasks(taskList);
                 sortTasksByDate(taskList);
-                adapter.updateTasks(taskList);
+
+                adapter = new TaskAdapter(taskList, this, false);
+                adapter.setOnTaskStatusChangedListener(() -> updateGoalView());
+                adapter.setOnItemClickListener(task -> showEditDialog(task));
+                binding.taskRecyclerView.setAdapter(adapter);
 
                 binding.taskRecyclerView.setVisibility(View.VISIBLE);
                 binding.fragmentContainer.setVisibility(View.GONE);
@@ -118,7 +122,11 @@ public class MainActivity extends AppCompatActivity {
                 currentView = ViewMode.DONE;
                 taskList = db.taskDao().getDoneTasks();
                 sortTasksByDate(taskList);
-                adapter.updateTasks(taskList);
+
+                adapter = new TaskAdapter(taskList, this, false);
+                adapter.setOnTaskStatusChangedListener(() -> updateGoalView());
+                adapter.setOnItemClickListener(task -> showEditDialog(task));
+                binding.taskRecyclerView.setAdapter(adapter);
 
                 binding.taskRecyclerView.setVisibility(View.VISIBLE);
                 binding.fragmentContainer.setVisibility(View.GONE);
@@ -126,21 +134,31 @@ public class MainActivity extends AppCompatActivity {
 
             } else if (id == R.id.nav_late) {
                 currentView = null;
-                updateLateTasks();
-                binding.addTask.hide();
+                taskList = db.taskDao().getAllUnfinished();
+                filterOverdueTasks(taskList);
+                sortTasksByDate(taskList);
+
+                adapter = new TaskAdapter(taskList, this, false);
+                adapter.setOnTaskStatusChangedListener(() -> updateGoalView());
+                adapter.setOnItemClickListener(task -> showEditDialog(task));
+                binding.taskRecyclerView.setAdapter(adapter);
 
                 binding.taskRecyclerView.setVisibility(View.VISIBLE);
                 binding.fragmentContainer.setVisibility(View.GONE);
+                binding.addTask.hide();
 
             } else if (id == R.id.nav_deleted) {
                 currentView = null;
                 taskList = db.taskDao().getDeletedTasks();
                 sortTasksByDate(taskList);
-                adapter.updateTasks(taskList);
-                binding.addTask.hide();
+
+                adapter = new TaskAdapter(taskList, this, true); // <- isDeletedTab = true!
+                adapter.setOnItemClickListener(task -> showEditDialog(task));
+                binding.taskRecyclerView.setAdapter(adapter);
 
                 binding.taskRecyclerView.setVisibility(View.VISIBLE);
                 binding.fragmentContainer.setVisibility(View.GONE);
+                binding.addTask.hide();
 
             } else if (id == R.id.nav_stats) {
                 binding.fragmentContainer.setVisibility(View.VISIBLE);
@@ -148,6 +166,18 @@ public class MainActivity extends AppCompatActivity {
                 getSupportFragmentManager()
                         .beginTransaction()
                         .replace(R.id.fragment_container, new StatisticsFragment())
+                        .addToBackStack(null)
+                        .commit();
+
+                binding.taskRecyclerView.setVisibility(View.GONE);
+                binding.addTask.hide();
+
+            } else if (id == R.id.nav_goals) {
+                binding.fragmentContainer.setVisibility(View.VISIBLE);
+
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, new GoalsFragment())
                         .addToBackStack(null)
                         .commit();
 
@@ -162,7 +192,7 @@ public class MainActivity extends AppCompatActivity {
         taskList = db.taskDao().getActiveTasks();
         filterOnlyUpcomingTasks(taskList);
         sortTasksByDate(taskList);
-        adapter = new TaskAdapter(taskList, this);
+        adapter = new TaskAdapter(taskList, this, false);
         adapter.setOnTaskStatusChangedListener(() -> updateGoalView());
         adapter.setOnItemClickListener(task -> showEditDialog(task));
 
@@ -435,7 +465,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateGoalView() {
-        if (db == null) return; // zabezpieczenie
+        if (db == null) return;
 
         String text = prefs.getString(PREF_GOAL_TEXT, null);
         int target = prefs.getInt(PREF_GOAL_TARGET, 0);
@@ -445,6 +475,24 @@ public class MainActivity extends AppCompatActivity {
             binding.goalText.setText(text + " (" + done + "/" + target + ")");
             binding.goalProgress.setMax(target);
             binding.goalProgress.setProgress(Math.min(done, target));
+
+            if (done >= target) {
+                GoalHistory goal = new GoalHistory();
+                goal.title = text;
+                goal.target = target;
+                goal.completedCount = done;
+                goal.completedDate = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(new Date());
+
+                db.goalDao().insert(goal);
+                prefs.edit().remove(PREF_GOAL_TEXT).remove(PREF_GOAL_TARGET).apply();
+
+                Toast.makeText(this, "🎉 Cel ukończony i zapisany!", Toast.LENGTH_LONG).show();
+
+                // Wyzeruj widok
+                binding.goalText.setText("Brak celu. Kliknij, aby ustawić");
+                binding.goalProgress.setProgress(0);
+            }
+
         } else {
             binding.goalText.setText("Brak celu. Kliknij, aby ustawić");
             binding.goalProgress.setProgress(0);

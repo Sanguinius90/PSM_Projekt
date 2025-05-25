@@ -32,4 +32,8 @@ public interface TaskDao {
 
     @Query("SELECT * FROM task WHERE deleted = 1")
     List<Task> getDeletedTasks();
+
+    @Query("SELECT * FROM task WHERE deleted = 0 AND done = 0")
+    List<Task> getTrulyActiveTasks();
+
 }

@@ -12,6 +12,9 @@
         android:id="@+id/nav_deleted"
         android:title="Usunięte" />
     <item
+        android:id="@+id/nav_goals"
+        android:title="Moje cele" />
+    <item
         android:id="@+id/nav_stats"
         android:title="Statystyki" />
 </menu>

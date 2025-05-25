@@ -25,21 +25,16 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     private List<Task> taskList;
     private final AppDatabase db;
     private final Context context;
+    private final boolean isDeletedTab;
 
-    public TaskAdapter(List<Task> taskList, Context context) {
+    public TaskAdapter(List<Task> taskList, Context context, boolean isDeletedTab) {
         this.taskList = taskList;
         this.context = context;
+        this.isDeletedTab = isDeletedTab;
         this.db = Room.databaseBuilder(context, AppDatabase.class, "task-database")
                 .allowMainThreadQueries()
                 .fallbackToDestructiveMigration()
                 .build();
-    }
-
-    @NonNull
-    @Override
-    public TaskViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View itemView = LayoutInflater.from(parent.getContext()).inflate(R.layout.task_item, parent, false);
-        return new TaskViewHolder(itemView);
     }
 
     public interface OnTaskStatusChangedListener {
@@ -52,6 +47,23 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         this.onTaskStatusChangedListener = listener;
     }
 
+    public interface OnItemClickListener {
+        void onItemClick(Task task);
+    }
+
+    private OnItemClickListener listener;
+
+    public void setOnItemClickListener(OnItemClickListener listener) {
+        this.listener = listener;
+    }
+
+    @NonNull
+    @Override
+    public TaskViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View itemView = LayoutInflater.from(parent.getContext()).inflate(R.layout.task_item, parent, false);
+        return new TaskViewHolder(itemView);
+    }
+
     @Override
     public void onBindViewHolder(@NonNull TaskViewHolder holder, int position) {
         Task task = taskList.get(position);
@@ -59,11 +71,11 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         holder.description.setText(task.getDescription());
         holder.date.setText(task.getDate());
 
-        // Resetujemy listener przed ustawieniem stanu
+        // Reset checkbox state and listener
         holder.checkBox.setOnCheckedChangeListener(null);
         holder.checkBox.setChecked(task.isDone());
 
-        // Obsługa kliknięcia checkboxa
+        // Checkbox click handler
         holder.checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
             task.setDone(isChecked);
             db.taskDao().update(task);
@@ -78,7 +90,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             }
         });
 
-        // Kolor karty zależny od priorytetu i terminu
+        // Card color logic
         if (task.isHighPriority()) {
             holder.cardView.setCardBackgroundColor(ContextCompat.getColor(context, R.color.red));
         } else {
@@ -104,12 +116,19 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             }
         }
 
-        // Obsługa kliknięcia w kartę (np. do edycji)
+        // Card click
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
                 listener.onItemClick(task);
             }
         });
+
+        // Hide checkbox if this is the "Deleted" tab
+        if (isDeletedTab) {
+            holder.checkBox.setVisibility(View.GONE);
+        } else {
+            holder.checkBox.setVisibility(View.VISIBLE);
+        }
     }
 
     @Override
@@ -135,15 +154,5 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             checkBox = view.findViewById(R.id.task_done);
             cardView = (CardView) view;
         }
-    }
-
-    public interface OnItemClickListener {
-        void onItemClick(Task task);
-    }
-
-    private OnItemClickListener listener;
-
-    public void setOnItemClickListener(OnItemClickListener listener) {
-        this.listener = listener;
     }
 }

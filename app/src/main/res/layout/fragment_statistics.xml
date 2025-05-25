@@ -22,7 +22,6 @@
             android:layout_marginBottom="24dp"
             android:padding="8dp" />
 
-        <!-- KARTA: Wszystkie -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -41,7 +40,6 @@
                 android:textStyle="bold" />
         </androidx.cardview.widget.CardView>
 
-        <!-- KARTA: Wykonane -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -53,14 +51,13 @@
                 android:id="@+id/doneTextView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Wykonane: 0"
+                android:text="Skończone: 0"
                 android:padding="16dp"
                 android:textColor="@android:color/white"
                 android:textSize="18sp"
                 android:textStyle="bold" />
         </androidx.cardview.widget.CardView>
 
-        <!-- KARTA: Nieskończone -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -79,7 +76,6 @@
                 android:textStyle="bold" />
         </androidx.cardview.widget.CardView>
 
-        <!-- KARTA: Usunięte -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

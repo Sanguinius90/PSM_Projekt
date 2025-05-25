@@ -29,33 +29,39 @@ public class ReminderWorker extends Worker {
                 .allowMainThreadQueries()
                 .build();
 
-        List<Task> tasks = db.taskDao().getAll();
+        List<Task> tasks = db.taskDao().getAll(); // lub getTrulyActiveTasks()
         SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+        Calendar today = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+        today.set(Calendar.HOUR_OF_DAY, 0);
+        today.set(Calendar.MINUTE, 0);
+        today.set(Calendar.SECOND, 0);
+        today.set(Calendar.MILLISECOND, 0);
 
         int notificationId = 1;
 
         for (Task task : tasks) {
-            if (!task.isDone()) {
-                try {
-                    if (task.isHighPriority()) {
-                        // Wysoki priorytet -> natychmiast przypomnienie
+            try {
+                if (task.isDone() || task.isDeleted()) continue; // Pomiń zakończone lub usunięte
+
+                Calendar taskDate = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+                taskDate.setTime(sdf.parse(task.getDate()));
+
+                if (taskDate.before(today)) continue; // Pomiń przeterminowane
+
+                // Jeśli wszystko OK, pokaż notyfikację
+                if (task.isHighPriority()) {
+                    NotificationHelper.showNotification(getApplicationContext(), "Przypomnienie!", task.getTitle(), notificationId++);
+                } else {
+                    long diffInMillis = taskDate.getTimeInMillis() - today.getTimeInMillis();
+                    long diffInDays = TimeUnit.MILLISECONDS.toDays(diffInMillis);
+
+                    if (diffInDays <= 3) {
                         NotificationHelper.showNotification(getApplicationContext(), "Przypomnienie!", task.getTitle(), notificationId++);
-                    } else {
-                        sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
-                        Calendar today = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-                        Calendar taskDate = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-                        taskDate.setTime(sdf.parse(task.getDate()));
-
-                        long diffInMillis = taskDate.getTimeInMillis() - today.getTimeInMillis();
-                        long diffInDays = TimeUnit.MILLISECONDS.toDays(diffInMillis);
-
-                        if (diffInDays <= 3) {
-                            NotificationHelper.showNotification(getApplicationContext(), "Przypomnienie!", task.getTitle(), notificationId++);
-                        }
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
                 }
+
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
 

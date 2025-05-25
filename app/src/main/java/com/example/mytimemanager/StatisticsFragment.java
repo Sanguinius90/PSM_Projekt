@@ -46,7 +46,6 @@ public class StatisticsFragment extends Fragment {
         adapter.setDropDownViewResource(R.layout.spinner_item);
         binding.monthSpinner.setAdapter(adapter);
 
-
         int currentMonth = Calendar.getInstance().get(Calendar.MONTH);
         binding.monthSpinner.setSelection(currentMonth);
 
@@ -84,12 +83,12 @@ public class StatisticsFragment extends Fragment {
 
                 if (taskMonth != monthIndex) continue;
 
+                total++;
+
                 if (task.isDeleted()) {
                     deleted++;
                     continue;
                 }
-
-                total++;
 
                 if (task.isDone()) {
                     done++;
@@ -100,9 +99,8 @@ public class StatisticsFragment extends Fragment {
             } catch (Exception ignored) {}
         }
 
-        // Ustawianie wartości w TextView
         binding.totalTextView.setText("Zadania w tym miesiącu: " + total);
-        binding.doneTextView.setText("Wykonane: " + done);
+        binding.doneTextView.setText("Skończone: " + done);
         binding.overdueTextView.setText("Nieskończone: " + overdue);
         binding.deletedTextView.setText("Usunięte: " + deleted);
     }
