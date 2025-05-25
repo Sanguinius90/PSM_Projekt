@@ -9,4 +9,5 @@
     <color name="darkOrange">#eda230</color>
     <color name="red">#d65e5e</color>
     <color name="darkRed">#661e1e</color>
+    <color name="darkGrey">#c0c0c0</color>
 </resources>

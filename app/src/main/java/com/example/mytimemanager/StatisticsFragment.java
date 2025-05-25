@@ -40,10 +40,12 @@ public class StatisticsFragment extends Fragment {
 
         ArrayAdapter<String> adapter = new ArrayAdapter<>(
                 requireContext(),
-                android.R.layout.simple_spinner_dropdown_item,
+                R.layout.spinner_item,
                 getMonthNames()
         );
+        adapter.setDropDownViewResource(R.layout.spinner_item);
         binding.monthSpinner.setAdapter(adapter);
+
 
         int currentMonth = Calendar.getInstance().get(Calendar.MONTH);
         binding.monthSpinner.setSelection(currentMonth);
