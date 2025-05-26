@@ -107,9 +107,12 @@ public class MainActivity extends AppCompatActivity {
                             return;
                         }
 
+                        int currentDone = db.taskDao().getDoneTasks().size();
+
                         prefs.edit()
                                 .putString(PREF_GOAL_TEXT, newText)
                                 .putInt(PREF_GOAL_TARGET, newTarget)
+                                .putInt("done_offset", currentDone)
                                 .apply();
 
                         updateGoalView();
