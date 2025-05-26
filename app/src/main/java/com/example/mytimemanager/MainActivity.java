@@ -88,7 +88,7 @@ public class MainActivity extends AppCompatActivity {
                 targetInput.setText(String.valueOf(currentTarget));
             }
 
-            new AlertDialog.Builder(this)
+            AlertDialog.Builder builder = new AlertDialog.Builder(this)
                     .setTitle(currentGoal != null ? "Edytuj cel" : "Ustaw cel")
                     .setView(dialogView)
                     .setPositiveButton("Zapisz", (dialog, which) -> {
@@ -117,8 +117,23 @@ public class MainActivity extends AppCompatActivity {
 
                         updateGoalView();
                     })
-                    .setNegativeButton("Anuluj", null)
-                    .show();
+                    .setNegativeButton("Anuluj", null);
+
+            if (currentGoal != null) {
+                builder.setNeutralButton("Usuń cel", (dialog, which) -> {
+                    prefs.edit()
+                            .remove(PREF_GOAL_TEXT)
+                            .remove(PREF_GOAL_TARGET)
+                            .remove("done_offset")
+                            .apply();
+
+                    updateGoalView();
+                    Toast.makeText(this, "Cel został usunięty", Toast.LENGTH_SHORT).show();
+                });
+            }
+
+            builder.show();
+
         });
 
         updateGoalView();
