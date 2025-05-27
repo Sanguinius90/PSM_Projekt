@@ -16,8 +16,8 @@
     </style>
 
     <style name="DrawerMenuTextStyle" parent="TextAppearance.Material3.BodyLarge">
-        <item name="android:textSize">18sp</item>         <!-- większy tekst -->
-        <item name="android:textColor">@color/green</item> <!-- Twój zielony kolor -->
+        <item name="android:textSize">18sp</item>
+        <item name="android:textColor">@color/green</item>
     </style>
 
     <style name="SpinnerTheme" parent="Widget.AppCompat.Spinner">
