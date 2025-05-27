@@ -47,7 +47,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String PREF_GOAL_TEXT = "goal_text";
     private static final String PREF_GOAL_TARGET = "goal_target";
 
-    private enum ViewMode { ACTIVE, DONE }
+    private enum ViewMode { ACTIVE, DONE, LATE, DELETED }
     private ViewMode currentView = ViewMode.ACTIVE;
 
     @Override
@@ -172,7 +172,7 @@ public class MainActivity extends AppCompatActivity {
                 binding.addTask.hide();
 
             } else if (id == R.id.nav_late) {
-                currentView = null;
+                currentView = ViewMode.LATE;
                 taskList = db.taskDao().getAllUnfinished();
                 filterOverdueTasks(taskList);
                 sortTasksByDate(taskList);
@@ -187,7 +187,7 @@ public class MainActivity extends AppCompatActivity {
                 binding.addTask.hide();
 
             } else if (id == R.id.nav_deleted) {
-                currentView = null;
+                currentView = ViewMode.DELETED;
                 taskList = db.taskDao().getDeletedTasks();
                 sortTasksByDate(taskList);
 
@@ -302,8 +302,8 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public int getMovementFlags(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
-                if (currentView == null) {
-                    // Jesteś w zakładce „Usunięte” – pozwól na swipe w obie strony
+                if (currentView == ViewMode.DELETED) {
+                    // Usunięte – pozwalamy na swipe w lewo i prawo
                     return makeMovementFlags(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT);
                 } else {
                     // Inne zakładki – tylko swipe w lewo
@@ -323,9 +323,9 @@ public class MainActivity extends AppCompatActivity {
                 int position = viewHolder.getAdapterPosition();
                 Task swipedTask = taskList.get(position);
 
-                if (currentView == null) { // Usunięte
+                if (currentView == ViewMode.DELETED) {
                     if (direction == ItemTouchHelper.RIGHT) {
-                        // PRZYWRÓĆ ZADANIE
+                        // PRZYWRÓĆ
                         swipedTask.setDeleted(false);
                         db.taskDao().update(swipedTask);
                         updateDeletedTasks();
@@ -337,7 +337,7 @@ public class MainActivity extends AppCompatActivity {
                                     updateDeletedTasks();
                                 }).show();
                     } else {
-                        // OPCJONALNIE: permanentne usunięcie
+                        // TRWAŁE USUNIĘCIE
                         db.taskDao().delete(swipedTask);
                         updateDeletedTasks();
 
@@ -348,7 +348,7 @@ public class MainActivity extends AppCompatActivity {
                                 }).show();
                     }
                 } else {
-                    // Aktywne / Skończone → oznacz jako deleted
+                    // Wszystkie inne widoki (aktywne, done, late)
                     swipedTask.setDeleted(true);
                     db.taskDao().update(swipedTask);
                     updateTaskList();
@@ -415,7 +415,7 @@ public class MainActivity extends AppCompatActivity {
                         icon.draw(canvas);
                     }
 
-                } else if (dX > 0 && currentView == null) {
+                } else if (dX > 0 && currentView == ViewMode.DELETED) {
                     rectF = new RectF(itemView.getLeft(), itemView.getTop(),
                             itemView.getLeft() + dX, itemView.getBottom());
                     canvas.drawRoundRect(rectF, radius, radius, paint);
@@ -495,7 +495,11 @@ public class MainActivity extends AppCompatActivity {
             filterOnlyUpcomingTasks(taskList);
         } else if (currentView == ViewMode.DONE) {
             taskList = db.taskDao().getDoneTasks();
+        } else if (currentView == ViewMode.LATE) {
+            taskList = db.taskDao().getAllUnfinished();
+            filterOverdueTasks(taskList);
         }
+
         sortTasksByDate(taskList);
         adapter.updateTasks(taskList);
         updateGoalView();
@@ -597,10 +601,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateDeletedTasks() {
-        taskList = db.taskDao().getDeletedTasks();
-        sortTasksByDate(taskList);
+        List<Task> newList = db.taskDao().getDeletedTasks();
+        sortTasksByDate(newList);
+        taskList.clear();
+        taskList.addAll(newList);
         adapter.updateTasks(taskList);
     }
+
     private void promptNewGoal() {
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_goal, null);
         EditText goalInput = dialogView.findViewById(R.id.goal_input);
