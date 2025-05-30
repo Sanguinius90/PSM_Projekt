@@ -25,12 +25,14 @@ public class ReminderWorker extends Worker {
     @Override
     public Result doWork() {
         Log.d("ReminderWorker", "Worker started");
+
         AppDatabase db = Room.databaseBuilder(getApplicationContext(), AppDatabase.class, "task-database")
                 .allowMainThreadQueries()
                 .build();
 
-        List<Task> tasks = db.taskDao().getAll(); // lub getTrulyActiveTasks()
+        List<Task> tasks = db.taskDao().getAll();
         SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+
         Calendar today = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
         today.set(Calendar.HOUR_OF_DAY, 0);
         today.set(Calendar.MINUTE, 0);
@@ -41,23 +43,22 @@ public class ReminderWorker extends Worker {
 
         for (Task task : tasks) {
             try {
-                if (task.isDone() || task.isDeleted()) continue; // Pomiń zakończone lub usunięte
+                if (task.isDone() || task.isDeleted()) continue;
 
                 Calendar taskDate = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
                 taskDate.setTime(sdf.parse(task.getDate()));
 
-                if (taskDate.before(today)) continue; // Pomiń przeterminowane
+                if (taskDate.before(today)) continue;
 
-                // Jeśli wszystko OK, pokaż notyfikację
-                if (task.isHighPriority()) {
-                    NotificationHelper.showNotification(getApplicationContext(), "Przypomnienie!", task.getTitle(), notificationId++);
-                } else {
-                    long diffInMillis = taskDate.getTimeInMillis() - today.getTimeInMillis();
-                    long diffInDays = TimeUnit.MILLISECONDS.toDays(diffInMillis);
+                long diffInMillis = taskDate.getTimeInMillis() - today.getTimeInMillis();
 
-                    if (diffInDays <= 3) {
-                        NotificationHelper.showNotification(getApplicationContext(), "Przypomnienie!", task.getTitle(), notificationId++);
-                    }
+                if (diffInMillis <= TimeUnit.HOURS.toMillis(24) && diffInMillis > 0) {
+                    NotificationHelper.showNotification(
+                            getApplicationContext(),
+                            "Przypomnienie!",
+                            task.getTitle(),
+                            notificationId++
+                    );
                 }
 
             } catch (Exception e) {

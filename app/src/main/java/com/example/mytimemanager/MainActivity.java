@@ -26,7 +26,9 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.room.Room;
+import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.OneTimeWorkRequest;
+import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 
 import com.example.mytimemanager.databinding.ActivityMainBinding;
@@ -65,8 +67,15 @@ public class MainActivity extends AppCompatActivity {
         prefs = getSharedPreferences("goal_prefs", MODE_PRIVATE);
 
         NotificationHelper.createNotificationChannel(this);
-        OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(ReminderWorker.class).build();
-        WorkManager.getInstance(this).enqueue(request);
+        PeriodicWorkRequest dailyReminder =
+                new PeriodicWorkRequest.Builder(ReminderWorker.class, 24, TimeUnit.HOURS)
+                        .build();
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                "daily_reminder",
+                ExistingPeriodicWorkPolicy.KEEP,
+                dailyReminder
+        );
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
