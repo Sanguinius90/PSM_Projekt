@@ -107,12 +107,12 @@ public class MainActivity extends AppCompatActivity {
                         try {
                             newTarget = Integer.parseInt(targetInput.getText().toString().trim());
                         } catch (NumberFormatException e) {
-                            Toast.makeText(this, "Nieprawidłowa liczba zadań", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "Nieprawidłowa liczba zadań!", Toast.LENGTH_SHORT).show();
                             return;
                         }
 
                         if (newTarget <= 0 || newText.isEmpty()) {
-                            Toast.makeText(this, "Uzupełnij wszystkie pola poprawnie", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "Uzupełnij wszystkie pola poprawnie!", Toast.LENGTH_SHORT).show();
                             return;
                         }
 

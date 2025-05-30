@@ -55,7 +55,7 @@ public class ReminderWorker extends Worker {
                 if (diffInMillis <= TimeUnit.HOURS.toMillis(24) && diffInMillis > 0) {
                     NotificationHelper.showNotification(
                             getApplicationContext(),
-                            "Przypomnienie!",
+                            "Przypomnienie",
                             task.getTitle(),
                             notificationId++
                     );
