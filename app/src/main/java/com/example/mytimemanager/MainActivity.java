@@ -583,26 +583,39 @@ public class MainActivity extends AppCompatActivity {
 
     private void filterOverdueTasks(List<Task> tasks) {
         SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
-        Date today = new Date();
+        Calendar today = Calendar.getInstance();
+        today.set(Calendar.HOUR_OF_DAY, 0);
+        today.set(Calendar.MINUTE, 0);
+        today.set(Calendar.SECOND, 0);
+        today.set(Calendar.MILLISECOND, 0);
 
         tasks.removeIf(task -> {
             try {
                 Date taskDate = sdf.parse(task.getDate());
-                return taskDate == null || !taskDate.before(today);
+                if (taskDate == null) return true;
+
+                return !taskDate.before(today.getTime());
             } catch (Exception e) {
                 return true;
             }
         });
     }
 
+
     private void filterOnlyUpcomingTasks(List<Task> tasks) {
         SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
-        Date today = new Date();
+        Calendar today = Calendar.getInstance();
+        today.set(Calendar.HOUR_OF_DAY, 0);
+        today.set(Calendar.MINUTE, 0);
+        today.set(Calendar.SECOND, 0);
+        today.set(Calendar.MILLISECOND, 0);
 
         tasks.removeIf(task -> {
             try {
                 Date taskDate = sdf.parse(task.getDate());
-                return taskDate != null && taskDate.before(today);
+                if (taskDate == null) return true;
+
+                return taskDate.before(today.getTime());
             } catch (Exception e) {
                 return true;
             }
