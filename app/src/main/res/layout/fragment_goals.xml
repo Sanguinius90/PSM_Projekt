@@ -14,6 +14,5 @@
         android:paddingBottom="100dp"
         tools:listitem="@layout/goal_card" />
 
-
 </FrameLayout>
 

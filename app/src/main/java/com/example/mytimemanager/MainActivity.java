@@ -251,9 +251,17 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
-                if (dy > 0 && binding.addTask.getVisibility() == View.VISIBLE) {
+                int totalItems = recyclerView.getAdapter().getItemCount();
+
+                if (totalItems <= 4) {
+                    binding.addTask.show();
+                    return;
+                }
+
+                if (dy > 0) {
                     binding.addTask.hide();
-                } else if (dy < 0 && binding.addTask.getVisibility() != View.VISIBLE) {
+                }
+                else if (dy < 0) {
                     binding.addTask.show();
                 }
             }
